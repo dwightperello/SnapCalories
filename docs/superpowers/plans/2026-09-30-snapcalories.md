@@ -47,6 +47,7 @@ If a version combination fails to sync in Task 1, fix it there (that's part of t
 - Every "now" and "today" comes from the injected `java.time.Clock`, never `System.currentTimeMillis()` / `LocalDate.now()` without a clock.
 - Background work runs on the injected `@IoDispatcher`.
 - ViewModels and use cases never touch `android.net.Uri`, `Context`, or `Bitmap`, so they stay testable on the plain JVM. Screens convert `File` → `Uri`.
+- Components: shared, reusable composables go in `ui/components/`; ones used by a single screen go in `ui/<screen>/components/`. Components are stateless (data + lambdas in, UI out) and each has a `@Preview`.
 - Screens receive `state` + `onEvent: (Event) -> Unit`. Stateless `XxxContent` composables are separate from the `XxxScreen` that holds the ViewModel, so they can be previewed.
 
 ## Review Focus
@@ -72,6 +73,12 @@ app/src/main/java/com/example/snapcalories/
   di/IoDispatcher.kt                     T2
   ui/theme/*                             T1
   ui/base/OrbitViewModel.kt              T3   (+ UiState/UiEvent/UiSideEffect)
+  ui/components/                         shared, reused by 2+ screens:
+    SnapTopBar.kt                        T3
+    FoodEntryRow.kt                      T3   (Today + Day detail)
+    CalorieTotalCard.kt                  T3   (Today + Day detail)
+    EmptyState.kt, ConfirmDeleteDialog.kt  T9
+  ui/<screen>/components/                used by one screen only (e.g. ui/review/components/CalorieInputField.kt, PhotoPreview.kt  T6)
   ui/today/{TodayContract,TodayViewModel,TodayScreen}.kt          T3, T4, T6
   ui/navigation/{Routes,SnapCaloriesNavHost}.kt                   T5, T6
   ui/history/{HistoryContract,HistoryViewModel,HistoryScreen}.kt  T5
@@ -145,7 +152,7 @@ app/src/androidTest/.../FoodEntryDaoTest.kt  T4
 **Concepts:** MVI loop (Event → ViewModel → State/Effect → UI); State vs Effect (state = what's on screen, effect = do-once); Orbit's `container`, `intent`, `reduce`, `postSideEffect`; `collectAsState`/`collectSideEffect`; why `XxxContent` is stateless.
 
 **Files:**
-- Create: `ui/base/OrbitViewModel.kt`, `ui/today/TodayContract.kt`, `ui/today/TodayViewModel.kt`, `ui/today/TodayScreen.kt`, `domain/model/FoodEntry.kt`
+- Create: `ui/base/OrbitViewModel.kt`, `ui/today/TodayContract.kt`, `ui/today/TodayViewModel.kt`, `ui/today/TodayScreen.kt`, `domain/model/FoodEntry.kt`, `ui/components/{SnapTopBar,FoodEntryRow,CalorieTotalCard}.kt`
 - Test: `app/src/test/java/com/example/snapcalories/ui/today/TodayViewModelTest.kt`
 
 **Interfaces — produces:**
@@ -240,7 +247,7 @@ app/src/androidTest/.../FoodEntryDaoTest.kt  T4
 
 **Session 5b — Day detail**
 - [ ] `DayDetailViewModel` reads `DayDetailRoute` from `SavedStateHandle`. Test: `loads entries for route epochDay`, `DeleteEntry deletes`. In tests, build `SavedStateHandle` with the route's args.
-- [ ] Implement the screen (reuse the entry row composable from Today by moving it to `ui/components/FoodEntryRow.kt`).
+- [ ] Implement the screen, reusing `FoodEntryRow`, `CalorieTotalCard`, and `SnapTopBar` from `ui/components/`.
 - [ ] Verify on the device: Today → History → tap a day → its entries show.
 - [ ] Commit `feat: Add Day detail screen`. Update `CLAUDE.md`.
 
