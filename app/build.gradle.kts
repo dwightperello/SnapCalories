@@ -59,6 +59,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
+    // Coroutines, declared explicitly so the app and kotlinx-coroutines-test use the SAME version.
+    // Without it, other libraries pull in an older one (1.10.2) and device tests crash with
+    // NoSuchMethodError (in androidTest the app's version always wins over the test library's).
+    implementation(libs.kotlinx.coroutines.android)
+
     // Hilt: runtime library + its code generator (ksp = runs at compile time, not shipped in the APK).
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
@@ -74,4 +79,14 @@ dependencies {
     // orbit-test → test { expectState / expectSideEffect }; coroutines-test → runTest, test dispatchers.
     testImplementation(libs.orbit.test)
     testImplementation(libs.kotlinx.coroutines.test)
+
+    // Room (local SQLite database): runtime + ktx (suspend functions & Flow from DAOs) for the app,
+    // compiler via ksp (generates the DAO/database code at build time, like Hilt).
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+    // Instrumented tests (app/src/androidTest — run on a phone/emulator, because Room needs real SQLite).
+    // coroutines-test again: testImplementation only covers app/src/test, not androidTest.
+    androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }
